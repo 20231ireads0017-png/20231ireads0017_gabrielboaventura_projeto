@@ -5,50 +5,45 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import java.util.List;
 
-public abstract class GenericDao<T> implements GenericIDao<T> {
+public abstract class GenericDao<T, ID> implements GenericIDao<T, ID> {
 
-    protected static final EntityManagerFactory emf =
-            Persistence.createEntityManagerFactory("prg03PU");
+    protected EntityManager em;
+    private Class<T> entityClass;
 
-    protected EntityManager em = emf.createEntityManager();
-
-    private final Class<T> classe;
-
-    public GenericDao(Class<T> classe) {
-        this.classe = classe;
+    public GenericDao(Class<T> entityClass) {
+        this.entityClass = entityClass;
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("prg03PU");
+        this.em = emf.createEntityManager();
     }
 
     @Override
-    public T save(T obj) {
+    public void save(T entity) {
         em.getTransaction().begin();
-        em.persist(obj);
-        em.getTransaction().commit();
-        return obj;
-    }
-
-    @Override
-    public T update(T obj) {
-        em.getTransaction().begin();
-        obj = em.merge(obj);
-        em.getTransaction().commit();
-        return obj;
-    }
-
-    @Override
-    public void delete(T obj) {
-        em.getTransaction().begin();
-        em.remove(em.contains(obj) ? obj : em.merge(obj));
+        em.persist(entity);
         em.getTransaction().commit();
     }
 
     @Override
-    public List<T> findAll() {
-        return em.createQuery("FROM " + classe.getName(), classe)
-                .getResultList();
+    public void update(T entity) {
+        em.getTransaction().begin();
+        em.merge(entity);
+        em.getTransaction().commit();
     }
 
     @Override
-    public T findById(Long id) {
-        return em.find(classe, id);
+    public void delete(T entity) {
+        em.getTransaction().begin();
+        em.remove(em.contains(entity) ? entity : em.merge(entity));
+        em.getTransaction().commit();
+    }
+
+    @Override
+    public T findById(ID id) {
+        return em.find(entityClass, id);
+    }
+
+    @Override
+    public List<T> getAll() {
+        return em.createQuery("FROM " + entityClass.getSimpleName(), entityClass).getResultList();
     }
 }
